@@ -1956,20 +1956,26 @@ public abstract class JobsDAO {
 
     public JobsPlayer loadFromDao(JobsPlayer jPlayer) {
         List<JobsDAOData> list = getAllJobs(jPlayer.getName(), jPlayer.getUniqueId());
-        jPlayer.progression.clear();
-        for (JobsDAOData jobdata : list) {
-            if (!plugin.isEnabled())
-                return null;
+        if (!plugin.isEnabled())
+            return null;
 
-            // add the job
-            Job job = Jobs.getJob(jobdata.getJobName());
-            if (job != null)
-                jPlayer.progression.add(new JobProgression(job, jPlayer, jobdata.getLevel(), jobdata.getExperience()));
-        }
-        jPlayer.reloadMaxExperience();
-        jPlayer.reloadLimits();
+        applyJobProgression(jPlayer, list);
+        jPlayer.setSaved(false);
         jPlayer.setUserId(Jobs.getPlayerManager().getPlayerId(jPlayer.getUniqueId()));
         return jPlayer;
+    }
+
+    public void applyJobProgression(JobsPlayer jPlayer, List<JobsDAOData> jobs) {
+        synchronized (jPlayer.progression) {
+            jPlayer.progression.clear();
+            for (JobsDAOData jobdata : jobs) {
+                Job job = Jobs.getJob(jobdata.getJobName());
+                if (job != null)
+                    jPlayer.progression.add(new JobProgression(job, jPlayer, jobdata.getLevel(), jobdata.getExperience()));
+            }
+        }
+        jPlayer.reloadMaxExperience();
+        jPlayer.reloadLimits(false);
     }
 
     @Deprecated
